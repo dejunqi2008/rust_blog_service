@@ -39,6 +39,20 @@ pub struct SubmitTaskRequest {
     source_file: String
 }
 
+
+#[derive(Debug, Serialize)]
+pub struct Tag {
+    id: u32,
+    tagname: String,
+    description: Option<String>
+}
+
+#[derive(Debug, Display)]
+pub enum GenericError {
+    NotFound,
+    UnknowError
+}
+
 #[derive(Debug, Display)]
 pub enum TaskError {
     TaskNotFound,
@@ -64,43 +78,28 @@ impl ResponseError for TaskError {
     }
 }
 
-/*
-pub struct Task {
-    pub user_uuid: String,
-    pub task_uuid: String,
-    pub task_type: String,
-    pub state: TaskState,
-    pub source_file: String,
-    pub result_file: Option<String>
+impl ResponseError for GenericError {
+    fn error_response(&self) -> HttpResponse {
+        HttpResponse::build(self.status_code())
+            .insert_header(ContentType::json())
+            .body(self.to_string())
+    }
+
+    fn status_code(&self) -> StatusCode {
+        match self {
+            GenericError::NotFound => StatusCode::NOT_FOUND,
+            GenericError::UnknowError => StatusCode::BAD_REQUEST
+        }
+    }
 }
 
-*/
 
-#[derive(Debug)]
-struct Tag {
-    id: u32,
-    tagname: String,
-    description: Option<String>
-}
-
-// pool: R2D2Pool<MySqlConnectionManager>
+#[get("/task/{task_global_id}")]
 pub async fn get_task(
-    db :Data<R2D2Pool<MySqlConnectionManager>>,
+    task_identifier: Path<TaskIdentifier>
     // params: web::Path<UpdateParams>,
 ) -> Result<Json<Task>, TaskError> {
-    // let tsk: Option<Task> = ddb_repo.get_task(
-    //     task_identifier.into_inner().task_global_id
-    // ).await;
-    let mut conn: PooledConnection<MySqlConnectionManager> = db.get().unwrap();
-    let s = "SELECT * FROM tags".to_string();
-
-    let res = conn.query_map( s, |(id, tagname, description)| Tag {
-        id,
-        tagname,
-        description
-    }).expect("Query failed.");
-
-    println!("{:?}", res);
+    println!("parameter: {:?}", task_identifier.into_inner().task_global_id);
 
     let tsk: Option<Task> = Some(Task {
         user_uuid: "ryw638q73".to_string(),
@@ -117,100 +116,37 @@ pub async fn get_task(
     }
 }
 
-#[post("/task")]
-pub async fn submit_task(
-    request: Json<SubmitTaskRequest>
-) -> Result<Json<TaskIdentifier>, TaskError> {
-    let task = Task::new (
-        request.user_id.clone(),
-        request.task_type.clone(),
-        request.source_file.clone(),
-    );
+// #[derive(Deserialize, Serialize)]
+#[get("/api/v2/tags")]
+pub async fn get_tags(
+    db :Data<R2D2Pool<MySqlConnectionManager>>
+) -> Result<Json<Vec<Tag>>, GenericError> {
+    let mut conn: PooledConnection<MySqlConnectionManager> = db.get().unwrap();
+    let s = "SELECT * FROM tags".to_string();
 
-    let task_identifier = task.get_global_id();
-    // match ddb_repo.put_task(task).await {
-    //     Ok(()) => Ok(Json(TaskIdentifier { task_global_id: task_identifier })),
-    //     Err(_) => Err(TaskError::TaskCreationFailure)
-    // }
-    Ok(Json(TaskIdentifier { task_global_id: task_identifier }))
+    let res = conn.query_map( s, |(id, tagname, description)| Tag {
+        id,
+        tagname,
+        description
+    }).expect("Query failed.");
+
+    println!("{:?}", res);
+
+    let mut tags: Vec<Tag> = vec![];
+    let t1 = Tag {
+        id: 1,
+        tagname: "sport".to_string(),
+        description: None
+    };
+
+    let t2 = Tag {
+        id: 1,
+        tagname: "economics".to_string(),
+        description: None
+    };
+
+    tags.push(t1);
+    tags.push(t2);
+    Ok(Json(res))
 }
 
-// async fn state_transition(
-//     ddb_repo: Data<DDBRepository>, 
-//     task_global_id: String,
-//     new_state: TaskState,
-//     result_file: Option<String>
-// ) -> Result<Json<TaskIdentifier>, TaskError> {
-//     let mut task = match ddb_repo.get_task(
-//         task_global_id
-//     ).await {
-//         Some(task) => task,
-//         None => return Err(TaskError::TaskNotFound)
-//     };
-
-//     if !task.can_transition_to(&new_state) {
-//         return Err(TaskError::BadTaskRequest);
-//     };
-    
-//     task.state = new_state;
-//     task.result_file = result_file;
-
-//     let task_identifier = task.get_global_id();
-//     match ddb_repo.put_task(task).await {
-//         Ok(()) => Ok(Json(TaskIdentifier { task_global_id: task_identifier })),
-//         Err(_) => Err(TaskError::TaskUpdateFailure)
-//     }
-// }
-
-// #[put("/task/{task_global_id}/start")]
-// pub async fn start_task(
-//     ddb_repo: Data<DDBRepository>, 
-//     task_identifier: Path<TaskIdentifier>
-// ) -> Result<Json<TaskIdentifier>, TaskError> {
-//     state_transition(
-//         ddb_repo, 
-//         task_identifier.into_inner().task_global_id, 
-//         TaskState::InProgress, 
-//         None
-//     ).await
-// }
-
-// #[put("/task/{task_global_id}/pause")]
-// pub async fn pause_task(
-//     ddb_repo: Data<DDBRepository>, 
-//     task_identifier: Path<TaskIdentifier>
-// ) -> Result<Json<TaskIdentifier>, TaskError> {
-//     state_transition(
-//         ddb_repo, 
-//         task_identifier.into_inner().task_global_id, 
-//         TaskState::Paused, 
-//         None
-//     ).await
-// }
-
-// #[put("/task/{task_global_id}/fail")]
-// pub async fn fail_task(
-//     ddb_repo: Data<DDBRepository>, 
-//     task_identifier: Path<TaskIdentifier>
-// ) -> Result<Json<TaskIdentifier>, TaskError> {
-//     state_transition(
-//         ddb_repo, 
-//         task_identifier.into_inner().task_global_id, 
-//         TaskState::Failed, 
-//         None
-//     ).await
-// }
-
-// #[put("/task/{task_global_id}/complete")]
-// pub async fn complete_task(
-//     ddb_repo: Data<DDBRepository>, 
-//     task_identifier: Path<TaskIdentifier>,
-//     completion_request: Json<TaskCompletionRequest>
-// ) -> Result<Json<TaskIdentifier>, TaskError> {
-//     state_transition(
-//         ddb_repo, 
-//         task_identifier.into_inner().task_global_id, 
-//         TaskState::Completed, 
-//         Some(completion_request.result_file.clone())
-//     ).await
-// }
