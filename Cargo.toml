@@ -18,3 +18,5 @@ strum = { version = "^0.24", features = ["derive"] }
 derive_more = "^0.99"
 mysql = "23.0.1"
 chrono = "0.4"
+r2d2="*"
+r2d2_mysql="23"
