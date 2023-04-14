@@ -24,11 +24,11 @@ fn create_db_pool() -> R2D2Pool<MySqlConnectionManager> {
 async fn main() -> std::io::Result<()> {
 
     println!("Server is running on part: 3000");
-    let pool: R2D2Pool<MySqlConnectionManager> = create_db_pool();
+    // let pool: R2D2Pool<MySqlConnectionManager> = create_db_pool();
 
     return HttpServer::new(move || {
             App::new()
-            .app_data(web::Data::new(pool.clone()))
+            // .app_data(web::Data::new(pool.clone()))
                 .service(get_tags)
             })
             .bind("127.0.0.1:3000")?
