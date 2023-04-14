@@ -8,8 +8,6 @@ use actix_web::{
 };
 use derive_more::Display;
 
-
-
 #[derive(Debug, Display)]
 pub enum GenericError {
     NotFound,
