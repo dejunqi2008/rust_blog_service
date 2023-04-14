@@ -16,7 +16,7 @@ use r2d2_mysql::MySqlConnectionManager;
 
 #[get("/api/v2/tags")]
 pub async fn get_tags(
-    db :Data<R2D2Pool<MySqlConnectionManager>>
+    // db :Data<R2D2Pool<MySqlConnectionManager>>
 ) -> Result<Json<Vec<Tag>>, GenericError> {
 
     // let mut conn: PooledConnection<MySqlConnectionManager> = db.get().unwrap();
