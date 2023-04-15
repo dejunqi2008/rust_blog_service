@@ -75,7 +75,6 @@ struct ActixData {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "debug");
-    println!("Environment var: {:?}", std::env::var("DUMMY_VAR"));
     env_logger::init();
     println!("Server is running on part: 3000");
     let data = web::Data::new(ActixData {
@@ -83,6 +82,9 @@ async fn main() -> std::io::Result<()> {
     });
 
     let mut host_url = "".to_owned();
+
+    // .host file is for hosting the server on EC2, TODO: figure out how to setup environment variable on EC2 and
+    // then deprecate the .host file
     let content = fs::read_to_string(".host");
     match content {
         Err(e) => {
