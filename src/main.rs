@@ -1,27 +1,69 @@
-mod api;
-mod model;
 mod util;
-
-use std::sync::{Mutex, Arc};
-
-use mysql::{prelude::*, Opts, OptsBuilder};
-
-use actix_web::{web, App, HttpServer};
-use r2d2::{Pool as R2D2Pool};
-use r2d2_mysql::MySqlConnectionManager;
-use crate::api::tag::get_tags;
-use std::env;
+use actix_web::{
+    web,
+    web::Json,
+    get,
+    App,
+    HttpServer,
+    ResponseError,
+    HttpResponse,
+    http::{
+        header::ContentType,
+        StatusCode
+    }
+};
 use std::fs;
+use serde::Serialize;
+use derive_more::Display;
 
-fn create_db_pool() -> R2D2Pool<MySqlConnectionManager> {
-    let url = "mysql://root:dejunqilocal@localhost:3306/myblog";
-    let ops = Opts::from_url(&url).unwrap();
-    let builder = OptsBuilder::from_opts(ops);
-    let manager = MySqlConnectionManager::new(builder);
-    R2D2Pool::builder()
-        .max_size(20)
-        .build(manager)
-        .unwrap()
+#[derive(Debug, Serialize)]
+pub struct Tag {
+    pub id: u32,
+    pub tagname: String,
+    pub description: Option<String>
+}
+
+
+#[derive(Debug, Display)]
+pub enum GenericError {
+    NotFound,
+    UnknowError
+}
+
+impl ResponseError for GenericError {
+    fn error_response(&self) -> HttpResponse {
+        HttpResponse::build(self.status_code())
+            .insert_header(ContentType::json())
+            .body(self.to_string())
+    }
+
+    fn status_code(&self) -> StatusCode {
+        match self {
+            GenericError::NotFound => StatusCode::NOT_FOUND,
+            GenericError::UnknowError => StatusCode::BAD_REQUEST
+        }
+    }
+}
+
+
+// Use hard coded dummy data for now
+#[get("/api/v2/tags")]
+pub async fn get_tags() -> Result<Json<Vec<Tag>>, GenericError> {
+    let t1 = Tag {
+        id: 1,
+        tagname: "sport".to_string(),
+        description: None
+    };
+    let t2 = Tag {
+        id: 2,
+        tagname: "economics".to_string(),
+        description: Some("Topics about economic".to_string())
+    };
+
+    let mut res: Vec<Tag> = vec![];
+    res.push(t1);
+    res.push(t2);
+    return Ok(Json(res));
 }
 
 // use dummy data for now, replace it with db pool once get MySql setup
@@ -37,7 +79,6 @@ async fn main() -> std::io::Result<()> {
     println!("Environment var: {:?}", std::env::var("DUMMY_VAR"));
     env_logger::init();
     println!("Server is running on part: 3000");
-    // let pool: R2D2Pool<MySqlConnectionManager> = create_db_pool();
     let data = web::Data::new(ActixData {
         counter: 0
     });
@@ -59,7 +100,6 @@ async fn main() -> std::io::Result<()> {
     return HttpServer::new(move || {
             App::new()
             .app_data(data.clone())
-            // .app_data(web::Data::new(pool.clone()))
                 .service(get_tags)
             })
             .bind(url)?
