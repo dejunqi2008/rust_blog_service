@@ -1,4 +1,3 @@
-mod util;
 use actix_web::{
     web,
     web::Json,
