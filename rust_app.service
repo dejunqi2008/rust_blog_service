@@ -1,0 +1,16 @@
+[Unit]
+Description=rust_blog_service
+After=multi-user.target
+
+[Service]
+ExecStart=/home/ubuntu/rust_blog_service/start.sh
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=rust_blog_service
+User=ubuntu
+
+
+[Install]
+WantedBy=multi-user.target
