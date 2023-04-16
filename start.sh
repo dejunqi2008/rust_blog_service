@@ -1,1 +1,2 @@
-cargo build && cargo run
+#!/bin/bash
+target/debug/rust_blog_service
