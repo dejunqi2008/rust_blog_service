@@ -10,7 +10,7 @@ actix-web = "^4"
 uuid = { version = "^0.8", features = ["v4"] }
 serde = { version = "^1", features = ["derive"] }
 # aws-config = "^0.8"
-# env_logger = "0.8"
+env_logger = "0.8"
 log = "^0.4"
 strum_macros = "^0.24"
 strum = { version = "^0.24", features = ["derive"] }
@@ -19,3 +19,4 @@ mysql = "23.0.1"
 chrono = "0.4"
 r2d2="*"
 r2d2_mysql="23"
+dotenv = "0.15.0"
