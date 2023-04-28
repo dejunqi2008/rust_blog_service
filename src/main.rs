@@ -11,36 +11,28 @@ use r2d2::{Pool as R2D2Pool};
 use r2d2_mysql::MySqlConnectionManager;
 use crate::api::tag::get_tags;
 use std::env;
+use dotenv::dotenv;
 use std::fs;
 
+
 fn create_db_pool() -> R2D2Pool<MySqlConnectionManager> {
-    let url = "mysql://root:dejunqilocal@localhost:3306/myblog";
-    let ops = Opts::from_url(&url).unwrap();
+    dotenv().ok();
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL is not found");
+    let ops = Opts::from_url(&database_url).unwrap();
     let builder = OptsBuilder::from_opts(ops);
     let manager = MySqlConnectionManager::new(builder);
     R2D2Pool::builder()
-        .max_size(20)
+        .max_size(5)
         .build(manager)
         .unwrap()
 }
 
-// use dummy data for now, replace it with db pool once get MySql setup
-#[derive(Debug, Default)]
-struct ActixData {
-    counter: usize,
-}
-
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "debug");
-    println!("Environment var: {:?}", std::env::var("DUMMY_VAR"));
     env_logger::init();
     println!("Server is running on part: 3000");
-    // let pool: R2D2Pool<MySqlConnectionManager> = create_db_pool();
-    let data = web::Data::new(ActixData {
-        counter: 0
-    });
+    let pool: R2D2Pool<MySqlConnectionManager> = create_db_pool();
 
     let mut host_url = "".to_owned();
     let content = fs::read_to_string(".host");
@@ -58,8 +50,7 @@ async fn main() -> std::io::Result<()> {
     println!("{}", url);
     return HttpServer::new(move || {
             App::new()
-            .app_data(data.clone())
-            // .app_data(web::Data::new(pool.clone()))
+            .app_data(web::Data::new(pool.clone()))
                 .service(get_tags)
             })
             .bind(url)?

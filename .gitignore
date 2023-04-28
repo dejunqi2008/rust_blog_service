@@ -1,4 +1,7 @@
 /target
+
 rust_blog_service_vm.pem
 .host
+
+.env
 
